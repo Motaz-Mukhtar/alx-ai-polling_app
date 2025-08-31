@@ -47,8 +47,7 @@ export default function AuthForm({ isSignup }: Props) {
         const response = await login({ email: data.email, password: data.password });
         console.log('Login response:', response);
         
-        // Simple redirect approach - let the server handle session validation
-        // This avoids client-side redirect loops
+        // Force a hard redirect to ensure the session is properly established
         window.location.href = '/polls';
       }
     } catch (err: unknown) {

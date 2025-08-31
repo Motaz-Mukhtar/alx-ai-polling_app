@@ -3,15 +3,13 @@ import { redirect } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
 import SignOutButton from '@/components/SignOutButton';
-import PollCard from '@/components/PollCard';
+import PollManagementCard from '@/components/PollManagementCard';
 
-export default async function PollsDashboard() {
+export default async function PollManagement() {
   const session = await getSession();
-  console.log("The session")
-  console.log(session)
+  
   if (!session) {
     redirect('/auth/login');
-    return null; // This ensures the function stops execution after redirect
   }
 
   // Get user profile
@@ -20,27 +18,41 @@ export default async function PollsDashboard() {
     .select('username')
     .eq('id', session.id)
     .single();
-
-  // Get all polls with vote counts
-  const { data: polls } = await supabase
+  console.log(profile)
+  // Get user's created polls with detailed vote counts
+  const { data: userPolls } = await supabase
     .from('polls')
     .select(`
       *,
-      profiles!polls_created_by_fkey(username),
-      votes(count)
+      votes(option_index)
     `)
+    .eq('created_by', session.id)
     .order('created_at', { ascending: false });
+    console.log(userPolls)
+  // Calculate vote statistics for each poll
+  const pollsWithStats = userPolls?.map(poll => {
+    const voteCounts = JSON.parse(poll.options).map((_: string, index: number) => 
+      poll.votes?.filter((vote: any) => vote.option_index === index).length || 0
+    );
+    
+    const totalVotes = voteCounts.reduce((sum: number, count: number) => sum + count, 0);
+    const mostVotedOption = voteCounts.indexOf(Math.max(...voteCounts));
+    const mostVotedCount = Math.max(...voteCounts);
+    
+    return {
+      ...poll,
+      voteCounts,
+      totalVotes,
+      mostVotedOption,
+      mostVotedCount,
+      mostVotedOptionText: poll.options[mostVotedOption] || 'No votes'
+    };
+  }) || [];
 
-  // Get user's created polls count
-  const { count: userPollsCount } = await supabase
-    .from('polls')
-    .select('*', { count: 'exact', head: true })
-    .eq('created_by', session.id);
-
-  // Get total polls count
-  const { count: totalPollsCount } = await supabase
-    .from('polls')
-    .select('*', { count: 'exact', head: true });
+  // Calculate overall statistics
+  const totalPolls = pollsWithStats.length;
+  const totalVotes = pollsWithStats.reduce((sum, poll) => sum + poll.totalVotes, 0);
+  const activePolls = pollsWithStats.filter(poll => poll.totalVotes > 0).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -49,15 +61,15 @@ export default async function PollsDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Polling Dashboard</h1>
-              <p className="text-gray-600">Welcome back, {profile?.username || 'User'}!</p>
+              <h1 className="text-3xl font-bold text-gray-900">My Polls</h1>
+              <p className="text-gray-600">Manage and track your created polls</p>
             </div>
             <div className="flex items-center space-x-4">
               <Link 
-                href="/polls/manage" 
+                href="/polls" 
                 className="text-blue-600 hover:text-blue-700 transition-colors font-medium"
               >
-                My Polls
+                ← Back to Dashboard
               </Link>
               <Link 
                 href="/polls/create" 
@@ -73,7 +85,7 @@ export default async function PollsDashboard() {
 
       {/* Stats Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-sm p-6 border">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -83,7 +95,7 @@ export default async function PollsDashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Polls</p>
-                <p className="text-2xl font-bold text-gray-900">{totalPollsCount || 0}</p>
+                <p className="text-2xl font-bold text-gray-900">{totalPolls}</p>
               </div>
             </div>
           </div>
@@ -92,12 +104,12 @@ export default async function PollsDashboard() {
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
                 <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Your Polls</p>
-                <p className="text-2xl font-bold text-gray-900">{userPollsCount || 0}</p>
+                <p className="text-sm font-medium text-gray-600">Total Votes</p>
+                <p className="text-2xl font-bold text-gray-900">{totalVotes}</p>
               </div>
             </div>
           </div>
@@ -106,35 +118,47 @@ export default async function PollsDashboard() {
             <div className="flex items-center">
               <div className="p-2 bg-purple-100 rounded-lg">
                 <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active</p>
-                <p className="text-2xl font-bold text-gray-900">{totalPollsCount || 0}</p>
+                <p className="text-sm font-medium text-gray-600">Active Polls</p>
+                <p className="text-2xl font-bold text-gray-900">{activePolls}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6 border">
+            <div className="flex items-center">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Avg. Votes</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {totalPolls > 0 ? Math.round(totalVotes / totalPolls) : 0}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Polls Grid */}
+        {/* Polls Management Section */}
         <div className="bg-white rounded-lg shadow-sm border">
           <div className="px-6 py-4 border-b">
-            <h2 className="text-xl font-semibold text-gray-900">Recent Polls</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Your Polls</h2>
+            <p className="text-gray-600 text-sm mt-1">Manage and track performance of your polls</p>
           </div>
           
           <div className="p-6">
-            {polls && polls.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {polls.map((poll: any) => (
-                  <PollCard 
+            {pollsWithStats.length > 0 ? (
+              <div className="space-y-6">
+                {pollsWithStats.map((poll) => (
+                  <PollManagementCard 
                     key={poll.id}
-                    id={poll.id}
-                    question={poll.question}
-                    options={poll.options}
-                    votes={poll.votes?.[0]?.count || 0}
-                    createdBy={poll.profiles?.username || 'Anonymous'}
-                    createdAt={poll.created_at}
+                    poll={poll}
                   />
                 ))}
               </div>
@@ -145,8 +169,8 @@ export default async function PollsDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No polls yet</h3>
-                <p className="text-gray-600 mb-6">Be the first to create a poll and start engaging with your community!</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No polls created yet</h3>
+                <p className="text-gray-600 mb-6">Start creating polls to see them here with detailed analytics!</p>
                 <Link 
                   href="/polls/create" 
                   className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"

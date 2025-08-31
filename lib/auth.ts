@@ -51,59 +51,29 @@ export async function login({ email, password }: { email: string; password: stri
 
 export async function getSession() {
   try {
-    // First try to get the session directly from Supabase
-    // Wrap in try/catch to handle AuthSessionMissingError specifically
-    try {
-      const cookieStore = await cookies();
-
-      const token = cookieStore.get('auth_token');
-
-      console.log(token);
-
-      const { data: sessionData } = await supabase.auth.getUser(token?.value);
-      console.log("session data");
-      console.log(sessionData);
-      // If we have a valid session with a user, return the user
-      if (sessionData?.user) {
-        console.log('Valid session found via Supabase');
-        return sessionData.user;
-      }
-    } catch (sessionError) {
-      // Log but continue to cookie fallback
-      console.log('Error getting Supabase session:', sessionError);
-      // Continue to cookie fallback
-    }
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth_token');
     
-    // Fallback to checking cookies
-    const myCookies = cookies();
-    const token = (await myCookies).get('auth_token');
-    
-    // If no token in cookies, return null immediately
-    if (!token) {
+    if (!token?.value) {
       console.log('No auth token in cookies');
       return null;
     }
     
-    // Try to get user with the token
-    try {
-      const { data, error } = await supabase.auth.getUser();
-      
-      if (error) {
-        console.error('Session error:', error);
-        return null;
-      }
-      
-      if (!data?.user) {
-        console.log('No user found with token');
-        return null;
-      }
-      
-      console.log('Valid user found via token');
-      return data.user;
-    } catch (userError) {
-      console.error('Error getting user:', userError);
+    // Use the token to get user info
+    const { data, error } = await supabase.auth.getUser(token.value);
+    
+    if (error) {
+      console.error('Error getting user from token:', error);
       return null;
     }
+    
+    if (!data?.user) {
+      console.log('No user found with token');
+      return null;
+    }
+    
+    console.log('Valid user found:', data.user.id);
+    return data.user;
   } catch (error) {
     console.error('Error getting session:', error);
     return null;
