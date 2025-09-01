@@ -23,7 +23,7 @@ export default function PollView({ poll, voteCounts, totalVotes, children }: Pol
   const [copied, setCopied] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   
-  const pollUrl = `${window.location.origin}/polls/${poll.id}`;
+  const pollUrl = `http://localhost:5000/polls/${poll.id}`;
 
   const copyToClipboard = async () => {
     try {
@@ -62,7 +62,7 @@ export default function PollView({ poll, voteCounts, totalVotes, children }: Pol
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">{poll.question}</h2>
             <div className="flex items-center text-sm text-gray-600 space-x-4">
-              <span>By {poll.profiles?.username || 'Anonymous'}</span>
+              <span>By {poll.username || 'Anonymous'}</span>
               <span>•</span>
               <span>{new Date(poll.created_at).toLocaleDateString()}</span>
               <span>•</span>
@@ -79,7 +79,7 @@ export default function PollView({ poll, voteCounts, totalVotes, children }: Pol
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Results</h3>
             
-            {poll.options.map((option: string, index: number) => {
+            {JSON.parse(poll.options).map((option: string, index: number) => {
               const voteCount = voteCounts[index];
               const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
               
@@ -116,7 +116,7 @@ export default function PollView({ poll, voteCounts, totalVotes, children }: Pol
                   <div className="text-sm text-gray-600">Total Votes</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{poll.options.length}</div>
+                  <div className="text-2xl font-bold text-green-600">{JSON.parse(poll.options).length}</div>
                   <div className="text-sm text-gray-600">Options</div>
                 </div>
               </div>

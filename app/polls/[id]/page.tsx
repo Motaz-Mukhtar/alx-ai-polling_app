@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import PollView from '@/components/PollView';
 import VoteForm from '@/components/VoteForm';
+import { Link } from 'lucide-react';
 
 type Props = { params: { id: string } };
 
@@ -10,16 +11,23 @@ export default async function Poll({ params }: Props) {
   const session = await getSession();
   if (!session) redirect('/auth/login');
 
+  const pollId = (await params).id;
+  console.log(`\n Polld Id: ${pollId} \n`);
   // Get poll data with vote counts
   const { data: poll } = await supabase
     .from('polls')
-    .select(`
-      *,
-      profiles!polls_created_by_fkey(username)
-    `)
-    .eq('id', params.id)
+    .select("*")
+    .eq('id', pollId)
     .single();
 
+    const { data } = await supabase
+    .from('profiles')
+    .select("username")
+    .eq('id', poll.created_by)
+    .single();
+
+    poll.username = data?.username;
+  console.log(poll)
   if (!poll) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -40,10 +48,10 @@ export default async function Poll({ params }: Props) {
   const { data: votes } = await supabase
     .from('votes')
     .select('option_index')
-    .eq('poll_id', params.id);
+    .eq('poll_id', pollId);
 
   // Calculate vote counts for each option
-  const voteCounts = poll.options.map((_: string, index: number) => 
+  const voteCounts = JSON.parse(poll.options).map((_: string, index: number) => 
     votes?.filter(vote => vote.option_index === index).length || 0
   );
 
@@ -52,7 +60,7 @@ export default async function Poll({ params }: Props) {
   return (
     <PollView poll={poll} voteCounts={voteCounts} totalVotes={totalVotes}>
       <VoteForm 
-        pollId={params.id} 
+        pollId={pollId} 
         question={poll.question} 
         options={poll.options} 
         existingVote={null} // We'll implement this later

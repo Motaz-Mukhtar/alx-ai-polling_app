@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -40,7 +41,9 @@ export default function PollForm() {
       const options = values.options.split(',').map(option => option.trim()).filter(option => option.length > 0);
       
       if (options.length < 2) {
-        setError('Please provide at least 2 valid options');
+        const validationError = 'Please provide at least 2 valid options';
+        setError(validationError);
+        toast.error(validationError);
         setIsSubmitting(false);
         return;
       }
@@ -58,12 +61,17 @@ export default function PollForm() {
       if (!response.ok) {
         throw new Error('Failed to create poll');
       }
-
+      
+      // Show success message and redirect
+      setError(null);
+      toast.success('Poll created successfully!');
       router.push('/polls');
       router.refresh();
     } catch (err) {
       console.error('Error creating poll:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred while creating the poll');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while creating the poll';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
