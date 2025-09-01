@@ -24,15 +24,53 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    
+    // Validate question length
+    if (question.trim().length < 5 || question.trim().length > 200) {
+      return NextResponse.json(
+        { error: 'Question must be between 5 and 200 characters' },
+        { status: 400 }
+      );
+    }
 
     const options = optionsString
       .split(',')
       .map(option => option.trim())
       .filter(option => option.length > 0);
     
+    // Validate options count
     if (options.length < 2) {
       return NextResponse.json(
         { error: 'Please provide at least 2 options' },
+        { status: 400 }
+      );
+    }
+    
+    // Validate options length and uniqueness
+    const optionErrors = [];
+    const uniqueOptions = new Set();
+    
+    for (const option of options) {
+      if (option.length < 1 || option.length > 100) {
+        optionErrors.push('Each option must be between 1 and 100 characters');
+        break;
+      }
+      
+      if (uniqueOptions.has(option.toLowerCase())) {
+        optionErrors.push('All options must be unique');
+        break;
+      }
+      
+      uniqueOptions.add(option.toLowerCase());
+    }
+    
+    if (options.length > 10) {
+      optionErrors.push('Maximum 10 options allowed');
+    }
+    
+    if (optionErrors.length > 0) {
+      return NextResponse.json(
+        { error: optionErrors[0] },
         { status: 400 }
       );
     }

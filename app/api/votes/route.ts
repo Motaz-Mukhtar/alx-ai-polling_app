@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { supabase, supabaseAdmin } from '@/lib/supabaseClient';
 
+// Helper function to validate UUID format
+function isValidUUID(id: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
@@ -24,13 +30,21 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    
+    // Validate poll ID format
+    if (!isValidUUID(pollId)) {
+      return NextResponse.json(
+        { error: 'Invalid poll ID format' },
+        { status: 400 }
+      );
+    }
 
     // Convert option to number for option_index
     const optionIndex = parseInt(option, 10);
     
-    if (isNaN(optionIndex)) {
+    if (isNaN(optionIndex) || optionIndex < 0) {
       return NextResponse.json(
-        { error: 'Option must be a valid number' },
+        { error: 'Option must be a valid non-negative number' },
         { status: 400 }
       );
     }

@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
 
+// Helper function to validate UUID format
+function isValidUUID(id: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+}
+
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getSession();
@@ -14,6 +20,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     const pollId = params.id;
+    
+    // Validate poll ID format
+    if (!pollId || !isValidUUID(pollId)) {
+      return NextResponse.json(
+        { error: 'Invalid poll ID format' },
+        { status: 400 }
+      );
+    }
     
     // Check if poll exists
     const { data: poll, error: pollError } = await supabase
