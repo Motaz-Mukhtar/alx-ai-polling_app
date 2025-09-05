@@ -14,7 +14,7 @@ export default async function Login() {
       
       <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md z-10">
         <h1 className="text-3xl font-bold mb-6 text-center text-blue-600">Welcome to Polling App</h1>
-        <AuthForm />
+        <AuthForm isSignup={false} />
       </div>
     </div>
   );

@@ -20,19 +20,43 @@ type VoteData = {
   totalVotes: number;
 };
 
-// Success message component
+/**
+ * Success message component that displays confirmation of a submitted vote.
+ * 
+ * This component provides visual feedback to users after they successfully submit their vote,
+ * showing which option they selected and confirming that their vote was recorded.
+ * 
+ * @param {Object} props - Component props
+ * @param {string} props.selectedOption - The option the user voted for
+ * @returns {JSX.Element} The rendered success message
+ */
 const SuccessMessage = ({ selectedOption }: { selectedOption: string }) => (
   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
     <div className="flex items-center text-blue-700">
       <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
       </svg>
-      <p className="font-medium">Your vote for "{selectedOption}" has been recorded!</p>
+      <p className="font-medium">Your vote for &quot;{selectedOption}&quot; has been recorded!</p>
     </div>
   </div>
 );
 
-// Poll results component
+/**
+ * Poll results component that displays vote statistics and percentages.
+ * 
+ * This component renders the results of a poll after voting, showing:
+ * - Vote counts for each option
+ * - Percentage calculations
+ * - Visual progress bars
+ * - Highlighting of the user's selected option
+ * 
+ * @param {Object} props - Component props
+ * @param {string[]} props.options - Array of poll options
+ * @param {number[]} props.voteCounts - Array of vote counts for each option
+ * @param {number} props.totalVotes - Total number of votes across all options
+ * @param {string} props.selectedOption - The option the user voted for
+ * @returns {JSX.Element} The rendered poll results
+ */
 const PollResults = ({ options, voteCounts, totalVotes, selectedOption }: {
   options: string[];
   voteCounts: number[];
@@ -65,6 +89,50 @@ const PollResults = ({ options, voteCounts, totalVotes, selectedOption }: {
   </div>
 );
 
+/**
+ * Interactive voting form component that allows users to vote on polls and view results.
+ * 
+ * This client component provides a comprehensive voting interface that:
+ * 1. Displays poll question and options as radio buttons
+ * 2. Handles vote submission with validation and error handling
+ * 3. Fetches and displays real-time vote statistics
+ * 4. Shows poll results with percentages and progress bars
+ * 5. Provides visual feedback for successful vote submission
+ * 6. Supports vote updates (users can change their vote)
+ * 
+ * The component features:
+ * - Radio button selection for poll options
+ * - Form validation to ensure option selection
+ * - Loading states during vote submission
+ * - Real-time vote count fetching and display
+ * - Visual progress bars showing vote percentages
+ * - Success confirmation with selected option highlighting
+ * - Error handling with user-friendly messages
+ * 
+ * Voting process:
+ * 1. User selects an option from radio buttons
+ * 2. Form validates selection and submits to /api/votes
+ * 3. Vote is processed (new vote or update existing)
+ * 4. Updated vote counts are fetched and displayed
+ * 5. Results view shows percentages and progress bars
+ * 
+ * @param {VoteFormProps} props - Component props
+ * @param {string} props.pollId - The UUID of the poll to vote on
+ * @param {string} props.question - The poll question text
+ * @param {string[]} props.options - Array of poll options
+ * @param {string} [props.existingVote] - User's existing vote (if any)
+ * @returns {JSX.Element} The rendered voting form with results
+ * 
+ * @example
+ * ```tsx
+ * <VoteForm 
+ *   pollId="123e4567-e89b-12d3-a456-426614174000"
+ *   question="What is your favorite programming language?"
+ *   options={["JavaScript", "Python", "TypeScript", "Rust"]}
+ *   existingVote="JavaScript"
+ * />
+ * ```
+ */
 export default function VoteForm({ pollId, question, options, existingVote }: VoteFormProps) {
   const router = useRouter();
   const [selectedOption, setSelectedOption] = useState<string | undefined>(existingVote);

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { getSession } from '@/lib/auth';
 
 export default function TestAuth() {
   const [session, setSession] = useState<any>(null);

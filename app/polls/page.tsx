@@ -5,6 +5,32 @@ import Link from 'next/link';
 import SignOutButton from '@/components/SignOutButton';
 import PollCard from '@/components/PollCard';
 
+/**
+ * Main polls dashboard page component that displays the user's polling interface.
+ * 
+ * This server component serves as the central hub for the polling application by:
+ * 1. Verifying user authentication and redirecting unauthenticated users
+ * 2. Fetching user profile information for personalized display
+ * 3. Retrieving all polls with vote counts and creator information
+ * 4. Calculating user-specific statistics (polls created, total polls)
+ * 5. Rendering a comprehensive dashboard with navigation and poll listings
+ * 
+ * The dashboard includes:
+ * - User welcome message with username
+ * - Navigation links to poll management and creation
+ * - Statistics cards showing poll counts and activity
+ * - Grid of all polls with vote counts and creator information
+ * - Empty state for when no polls exist
+ * 
+ * This component uses server-side rendering for optimal performance and SEO,
+ * fetching all data at build time and providing immediate content to users.
+ * 
+ * @returns {Promise<JSX.Element>} The rendered polls dashboard page
+ * 
+ * @example
+ * This component is automatically rendered when users visit /polls after authentication.
+ * It provides the main interface for viewing and interacting with polls in the system.
+ */
 export default async function PollsDashboard() {
   const session = await getSession();
   console.log("The session")
@@ -126,12 +152,12 @@ export default async function PollsDashboard() {
           <div className="p-6">
             {polls && polls.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {polls.map((poll: any) => (
+                {polls.map((poll: { id: string; question: string; options: string; votes: { count: number }[]; profiles: { username: string }; created_at: string }) => (
                   <PollCard 
                     key={poll.id}
                     id={poll.id}
                     question={poll.question}
-                    options={poll.options}
+                    options={JSON.parse(poll.options)}
                     votes={poll.votes?.[0]?.count || 0}
                     createdBy={poll.profiles?.username || 'Anonymous'}
                     createdAt={poll.created_at}

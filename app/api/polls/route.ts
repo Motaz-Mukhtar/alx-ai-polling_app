@@ -1,7 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { supabase, supabaseAdmin } from '@/lib/supabaseClient';
+import { supabaseAdmin } from '@/lib/supabaseClient';
 
+/**
+ * API endpoint for creating new polls with comprehensive validation and security checks.
+ * 
+ * This endpoint handles poll creation by:
+ * 1. Verifying user authentication and authorization
+ * 2. Validating poll data (question length, options count, uniqueness)
+ * 3. Sanitizing and processing poll options
+ * 4. Storing the poll in the database with proper user association
+ * 5. Returning the created poll data for immediate UI updates
+ * 
+ * The validation includes:
+ * - Question must be 5-200 characters
+ * - Minimum 2 options, maximum 10 options
+ * - Each option must be 1-100 characters
+ * - All options must be unique (case-insensitive)
+ * - User must be authenticated
+ * 
+ * @param {NextRequest} request - The incoming request containing poll data
+ * @returns {NextResponse} JSON response with success status and poll data or error message
+ * 
+ * @example
+ * ```typescript
+ * const formData = new FormData();
+ * formData.append('question', 'What is your favorite programming language?');
+ * formData.append('options', 'JavaScript, Python, TypeScript, Rust');
+ * 
+ * const response = await fetch('/api/polls', {
+ *   method: 'POST',
+ *   body: formData
+ * });
+ * 
+ * const result = await response.json();
+ * if (result.success) {
+ *   console.log('Poll created:', result.poll);
+ * }
+ * ```
+ */
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();

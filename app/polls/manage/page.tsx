@@ -5,6 +5,35 @@ import Link from 'next/link';
 import SignOutButton from '@/components/SignOutButton';
 import PollManagementCard from '@/components/PollManagementCard';
 
+/**
+ * Poll management dashboard page component for users to manage their created polls.
+ * 
+ * This server component provides comprehensive poll management functionality by:
+ * 1. Verifying user authentication and redirecting unauthenticated users
+ * 2. Fetching user profile information for personalized display
+ * 3. Retrieving all polls created by the authenticated user
+ * 4. Calculating detailed vote statistics for each poll
+ * 5. Computing overall analytics (total polls, votes, active polls, averages)
+ * 6. Rendering management interface with statistics and poll cards
+ * 
+ * The management dashboard includes:
+ * - User-specific statistics (total polls, total votes, active polls, average votes)
+ * - Detailed poll cards showing vote counts, percentages, and most popular options
+ * - Navigation back to main dashboard and poll creation
+ * - Empty state for users who haven't created any polls yet
+ * 
+ * The statistics calculation involves:
+ * - Parsing poll options from JSON format
+ * - Counting votes for each option across all polls
+ * - Identifying the most voted option for each poll
+ * - Computing percentages and totals for display
+ * 
+ * @returns {Promise<JSX.Element>} The rendered poll management dashboard page
+ * 
+ * @example
+ * This component is rendered when users visit /polls/manage and provides detailed
+ * analytics and management tools for their created polls.
+ */
 export default async function PollManagement() {
   const session = await getSession();
   
@@ -32,7 +61,7 @@ export default async function PollManagement() {
   // Calculate vote statistics for each poll
   const pollsWithStats = userPolls?.map(poll => {
     const voteCounts = JSON.parse(poll.options).map((_: string, index: number) => 
-      poll.votes?.filter((vote: any) => vote.option_index === index).length || 0
+      poll.votes?.filter((vote: { option_index: number }) => vote.option_index === index).length || 0
     );
     
     const totalVotes = voteCounts.reduce((sum: number, count: number) => sum + count, 0);

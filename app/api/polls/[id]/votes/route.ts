@@ -2,13 +2,54 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
 
-// Helper function to validate UUID format
+/**
+ * Validates if a string is a properly formatted UUID v4.
+ * 
+ * This utility function ensures that poll IDs are in the correct UUID format
+ * before processing them, preventing potential security issues and database errors.
+ * 
+ * @param {string} id - The string to validate as UUID
+ * @returns {boolean} True if the string is a valid UUID v4, false otherwise
+ */
 function isValidUUID(id: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   return uuidRegex.test(id);
 }
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+/**
+ * API endpoint for retrieving vote statistics for a specific poll.
+ * 
+ * This endpoint provides real-time vote data by:
+ * 1. Verifying user authentication (votes are public but require auth for consistency)
+ * 2. Validating poll ID format and existence
+ * 3. Fetching all votes for the specified poll
+ * 4. Calculating vote counts for each option
+ * 5. Returning structured vote statistics for UI display
+ * 
+ * The returned data includes:
+ * - Vote counts for each poll option
+ * - Total vote count across all options
+ * - Success status for error handling
+ * 
+ * This endpoint is used by the voting interface to display real-time results
+ * and update the UI after a user submits their vote.
+ * 
+ * @param {NextRequest} request - The incoming request (unused but required by Next.js)
+ * @param {Object} params - Route parameters containing the poll ID
+ * @param {string} params.id - The UUID of the poll to get vote statistics for
+ * @returns {NextResponse} JSON response with vote statistics or error message
+ * 
+ * @example
+ * ```typescript
+ * const response = await fetch('/api/polls/123e4567-e89b-12d3-a456-426614174000/votes');
+ * const result = await response.json();
+ * if (result.success) {
+ *   console.log('Vote counts:', result.voteCounts);
+ *   console.log('Total votes:', result.totalVotes);
+ * }
+ * ```
+ */
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     
@@ -19,7 +60,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       );
     }
 
-    const pollId = params.id;
+    const pollId = (await params).id;
     
     // Validate poll ID format
     if (!pollId || !isValidUUID(pollId)) {

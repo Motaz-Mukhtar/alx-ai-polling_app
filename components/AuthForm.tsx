@@ -3,9 +3,8 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { signUp, login } from '@/lib/auth';
-import { redirect, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabaseClient';
 
 type FormData = {
   username?: string;
@@ -19,6 +18,44 @@ type Props = {
   isSignup: boolean;
 };
 
+/**
+ * Unified authentication form component that handles both user registration and login.
+ * 
+ * This client component provides a comprehensive authentication interface that:
+ * 1. Renders different form fields based on whether it's signup or login mode
+ * 2. Validates form inputs using React Hook Form with built-in validation
+ * 3. Handles password confirmation matching for signup flows
+ * 4. Manages form submission state and error handling
+ * 5. Provides user feedback through loading states and error messages
+ * 6. Redirects users appropriately after successful authentication
+ * 
+ * The component features:
+ * - Dynamic form fields (username, phone for signup only)
+ * - Password confirmation validation for signup
+ * - Real-time form validation with error messages
+ * - Loading states during authentication requests
+ * - Comprehensive error handling and user feedback
+ * - Responsive design with modern UI components
+ * - Navigation links between signup and login modes
+ * 
+ * Authentication flow:
+ * - Signup: Creates new user account and redirects to login page
+ * - Login: Authenticates user and redirects to polls dashboard
+ * - Error handling: Displays specific error messages for different failure scenarios
+ * 
+ * @param {Props} props - Component props
+ * @param {boolean} props.isSignup - Whether to render signup or login form
+ * @returns {JSX.Element} The rendered authentication form
+ * 
+ * @example
+ * ```tsx
+ * // For signup form
+ * <AuthForm isSignup={true} />
+ * 
+ * // For login form
+ * <AuthForm isSignup={false} />
+ * ```
+ */
 export default function AuthForm({ isSignup }: Props) {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>();
   const [error, setError] = useState<string | null>(null);

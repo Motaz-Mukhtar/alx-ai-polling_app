@@ -206,7 +206,7 @@ export default function PollManagementCard({ poll }: Props) {
           <div className="bg-white rounded-lg p-6 max-w-md mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Poll</h3>
             <p className="text-gray-600 mb-4">
-              Are you sure you want to delete "{poll.question}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{poll.question}&quot;? This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <Button

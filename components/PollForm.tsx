@@ -7,10 +7,17 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 
+/**
+ * Zod schema for poll form validation.
+ * 
+ * This schema defines the validation rules for poll creation:
+ * - Question must be at least 5 characters long
+ * - Options string must contain at least 3 characters (to ensure at least 2 options)
+ */
 const formSchema = z.object({
   question: z.string().min(5, {
     message: 'Question must be at least 5 characters.',
@@ -20,6 +27,40 @@ const formSchema = z.object({
   }),
 });
 
+/**
+ * Poll creation form component that allows authenticated users to create new polls.
+ * 
+ * This client component provides a comprehensive poll creation interface that:
+ * 1. Renders a form with question and options input fields
+ * 2. Validates form inputs using Zod schema validation
+ * 3. Processes comma-separated options into an array
+ * 4. Submits poll data to the API endpoint
+ * 5. Handles form submission states and error scenarios
+ * 6. Provides user feedback through toast notifications
+ * 7. Redirects to the polls dashboard after successful creation
+ * 
+ * The form features:
+ * - Question input with minimum length validation
+ * - Options input with comma-separated value processing
+ * - Real-time form validation with error messages
+ * - Loading states during submission
+ * - Comprehensive error handling and user feedback
+ * - Integration with shadcn/ui components for consistent styling
+ * 
+ * Poll creation process:
+ * 1. User enters poll question and comma-separated options
+ * 2. Form validates input according to schema rules
+ * 3. Options are parsed and validated (minimum 2, maximum 10)
+ * 4. Data is submitted to /api/polls endpoint
+ * 5. Success feedback is shown and user is redirected
+ * 
+ * @returns {JSX.Element} The rendered poll creation form
+ * 
+ * @example
+ * ```tsx
+ * <PollForm />
+ * ```
+ */
 export default function PollForm() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);

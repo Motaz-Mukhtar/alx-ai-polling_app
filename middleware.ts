@@ -1,6 +1,31 @@
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse } from 'next/server';
 
+/**
+ * Next.js middleware for handling authentication and route protection.
+ * 
+ * This middleware implements a comprehensive authentication system that:
+ * 1. Skips processing for static assets and API routes to improve performance
+ * 2. Prevents redirect loops by checking referer headers and current paths
+ * 3. Handles automatic redirection based on authentication status
+ * 4. Validates sessions using Supabase Auth for protected routes
+ * 5. Manages cookie-based authentication state
+ * 
+ * The middleware logic:
+ * - Unauthenticated users accessing /polls/* routes are redirected to /auth/login
+ * - Authenticated users on /auth/login are redirected to /polls
+ * - Static assets and API routes bypass authentication checks
+ * - Includes loop prevention to avoid infinite redirects
+ * 
+ * @param {NextRequest} req - The incoming request object
+ * @returns {NextResponse} Response with potential redirects or continues to next middleware
+ * 
+ * @example
+ * The middleware automatically runs on routes matching the config.matcher pattern:
+ * - /polls/* (protected routes)
+ * - /auth/login (authentication routes)
+ * - /auth/signup (authentication routes)
+ */
 export async function middleware(req: any) {
   // Skip middleware processing for static assets and API routes
   if (req.nextUrl.pathname.includes('/_next') || 
