@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { deletePoll } from '@/lib/pollActions';
 import QRCodeModal from '@/components/QRCodeModal';
 import { 
   BarChart3, 
@@ -63,9 +62,16 @@ export default function PollManagementCard({ poll }: Props) {
 
   const handleDelete = async () => {
     try {
-      await deletePoll(poll.id);
+      const response = await fetch(`/api/polls/${poll.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete poll');
+      }
+
       setShowDeleteConfirm(false);
-      // The page will be revalidated automatically by the server action
+      router.refresh(); // Refresh the page to show the updated list
     } catch (error) {
       console.error('Error deleting poll:', error);
       alert('Failed to delete poll. Please try again.');
