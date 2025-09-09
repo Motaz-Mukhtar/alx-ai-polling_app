@@ -17,39 +17,45 @@ function isValidUUID(id: string): boolean {
 }
 
 /**
- * API endpoint for retrieving vote statistics for a specific poll.
- * 
- * This endpoint provides real-time vote data by:
- * 1. Verifying user authentication (votes are public but require auth for consistency)
- * 2. Validating poll ID format and existence
- * 3. Fetching all votes for the specified poll
- * 4. Calculating vote counts for each option
- * 5. Returning structured vote statistics for UI display
- * 
- * The returned data includes:
- * - Vote counts for each poll option
- * - Total vote count across all options
- * - Success status for error handling
- * 
- * This endpoint is used by the voting interface to display real-time results
- * and update the UI after a user submits their vote.
- * 
- * @param {NextRequest} request - The incoming request (unused but required by Next.js)
- * @param {Object} params - Route parameters containing the poll ID
- * @param {string} params.id - The UUID of the poll to get vote statistics for
- * @returns {NextResponse} JSON response with vote statistics or error message
- * 
- * @example
- * ```typescript
- * const response = await fetch('/api/polls/123e4567-e89b-12d3-a456-426614174000/votes');
- * const result = await response.json();
- * if (result.success) {
- *   console.log('Vote counts:', result.voteCounts);
- *   console.log('Total votes:', result.totalVotes);
- * }
- * ```
+ * @swagger
+ * /api/polls/{id}/votes:
+ *   get:
+ *     summary: Retrieve vote statistics for a poll
+ *     description: Fetches real-time vote counts for each option of a specific poll. Requires authentication.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The UUID of the poll.
+ *     responses:
+ *       200:
+ *         description: Successful response with vote statistics.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 voteCounts:
+ *                   type: array
+ *                   items:
+ *                     type: integer
+ *                 totalVotes:
+ *                   type: integer
+ *       400:
+ *         description: Invalid poll ID format.
+ *       401:
+ *         description: Unauthorized.
+ *       404:
+ *         description: Poll not found.
+ *       500:
+ *         description: Internal server error.
  */
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getSession();
     
@@ -60,7 +66,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       );
     }
 
-    const pollId = (await params).id;
+    const pollId = params.id;
     
     // Validate poll ID format
     if (!pollId || !isValidUUID(pollId)) {
@@ -100,7 +106,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Calculate vote counts for each option
     const options = JSON.parse(poll.options);
     const voteCounts = options.map((_: string, index: number) => 
-      votes?.filter(vote => vote.option_index === index).length || 0
+      votes?.filter((vote: { option_index: number }) => vote.option_index === index).length || 0
     );
 
     const totalVotes = voteCounts.reduce((sum: number, count: number) => sum + count, 0);

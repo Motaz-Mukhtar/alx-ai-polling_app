@@ -3,41 +3,42 @@ import { getSession } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabaseClient';
 
 /**
- * API endpoint for creating new polls with comprehensive validation and security checks.
- * 
- * This endpoint handles poll creation by:
- * 1. Verifying user authentication and authorization
- * 2. Validating poll data (question length, options count, uniqueness)
- * 3. Sanitizing and processing poll options
- * 4. Storing the poll in the database with proper user association
- * 5. Returning the created poll data for immediate UI updates
- * 
- * The validation includes:
- * - Question must be 5-200 characters
- * - Minimum 2 options, maximum 10 options
- * - Each option must be 1-100 characters
- * - All options must be unique (case-insensitive)
- * - User must be authenticated
- * 
- * @param {NextRequest} request - The incoming request containing poll data
- * @returns {NextResponse} JSON response with success status and poll data or error message
- * 
- * @example
- * ```typescript
- * const formData = new FormData();
- * formData.append('question', 'What is your favorite programming language?');
- * formData.append('options', 'JavaScript, Python, TypeScript, Rust');
- * 
- * const response = await fetch('/api/polls', {
- *   method: 'POST',
- *   body: formData
- * });
- * 
- * const result = await response.json();
- * if (result.success) {
- *   console.log('Poll created:', result.poll);
- * }
- * ```
+ * @swagger
+ * /api/polls:
+ *   post:
+ *     summary: Create a new poll
+ *     description: Creates a new poll with the provided question and options. Requires authentication.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               question:
+ *                 type: string
+ *                 description: The poll question.
+ *               options:
+ *                 type: string
+ *                 description: Comma-separated list of poll options.
+ *     responses:
+ *       200:
+ *         description: Poll created successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 poll:
+ *                   type: object
+ *       400:
+ *         description: Invalid input, such as missing fields or invalid options.
+ *       401:
+ *         description: Unauthorized.
+ *       500:
+ *         description: Failed to create poll.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -83,41 +84,30 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Validate options length and uniqueness
-    const optionErrors = [];
-    const uniqueOptions = new Set();
-    
-    for (const option of options) {
-      if (option.length < 1 || option.length > 100) {
-        optionErrors.push('Each option must be between 1 and 100 characters');
-        break;
-      }
-      
-      if (uniqueOptions.has(option.toLowerCase())) {
-        optionErrors.push('All options must be unique');
-        break;
-      }
-      
-      uniqueOptions.add(option.toLowerCase());
-    }
-    
     if (options.length > 10) {
-      optionErrors.push('Maximum 10 options allowed');
-    }
-    
-    if (optionErrors.length > 0) {
       return NextResponse.json(
-        { error: optionErrors[0] },
+        { error: 'Maximum 10 options allowed' },
         { status: 400 }
       );
     }
-    console.log("Data");
-    console.log(question, JSON.stringify(options), session);
+    
+    // Validate options length and uniqueness
+    const uniqueOptions = new Set();
+    for (const option of options) {
+      if (option.length < 1 || option.length > 100) {
+        return NextResponse.json({ error: 'Each option must be between 1 and 100 characters' }, { status: 400 });
+      }
+      if (uniqueOptions.has(option.toLowerCase())) {
+        return NextResponse.json({ error: 'All options must be unique' }, { status: 400 });
+      }
+      uniqueOptions.add(option.toLowerCase());
+    }
+    
     // Insert poll into database using admin client to bypass RLS
     const { data, error } = await supabaseAdmin.from('polls').insert({
       question,
-      options: `${JSON.stringify(options)}`,
-      created_by: session.id, // session is the user object from auth.getUser()
+      options: JSON.stringify(options),
+      created_by: session.id,
     }).select();
 
     if (error) {

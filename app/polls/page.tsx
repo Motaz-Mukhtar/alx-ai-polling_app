@@ -85,6 +85,12 @@ export default async function PollsDashboard() {
               >
                 My Polls
               </Link>
+              <Link
+                href="/polls/explore"
+                className="text-blue-600 hover:text-blue-700 transition-colors font-medium"
+              >
+                Explore Polls
+              </Link>
               <Link 
                 href="/polls/create" 
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
@@ -155,12 +161,14 @@ export default async function PollsDashboard() {
                 {polls.map((poll: { id: string; question: string; options: string; votes: { count: number }[]; profiles: { username: string }; created_at: string }) => (
                   <PollCard 
                     key={poll.id}
-                    id={poll.id}
-                    question={poll.question}
-                    options={JSON.parse(poll.options)}
-                    votes={poll.votes?.[0]?.count || 0}
-                    createdBy={poll.profiles?.username || 'Anonymous'}
-                    createdAt={poll.created_at}
+                    poll={{
+                      id: poll.id,
+                      question: poll.question,
+                      options: JSON.parse(poll.options),
+                      votes: poll.votes?.[0]?.count || 0,
+                      createdBy: poll.profiles?.username || 'Anonymous',
+                      created_at: poll.created_at,
+                    }}
                   />
                 ))}
               </div>
