@@ -5,18 +5,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Poll } from '@/lib/types';
 
-type PollProps = {
-  id: string;
-  question: string;
-  options: string[];
-  votes: number;
-  createdBy: string;
-  createdAt: string;
-};
-
-export default function PollCard({ id, question, options, votes, createdBy, createdAt }: PollProps) {
+export default function PollCard({ poll }: { poll: Poll }) {
   const router = useRouter();
+  const { id, question, options, votes, createdBy, created_at: createdAt } = poll;
   const formattedDate = new Date(createdAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',

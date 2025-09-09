@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -11,13 +11,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 
-/**
- * Zod schema for poll form validation.
- * 
- * This schema defines the validation rules for poll creation:
- * - Question must be at least 5 characters long
- * - Options string must contain at least 3 characters (to ensure at least 2 options)
- */
 const formSchema = z.object({
   question: z.string().min(5, {
     message: 'Question must be at least 5 characters.',
@@ -27,44 +20,21 @@ const formSchema = z.object({
   }),
 });
 
-/**
- * Poll creation form component that allows authenticated users to create new polls.
- * 
- * This client component provides a comprehensive poll creation interface that:
- * 1. Renders a form with question and options input fields
- * 2. Validates form inputs using Zod schema validation
- * 3. Processes comma-separated options into an array
- * 4. Submits poll data to the API endpoint
- * 5. Handles form submission states and error scenarios
- * 6. Provides user feedback through toast notifications
- * 7. Redirects to the polls dashboard after successful creation
- * 
- * The form features:
- * - Question input with minimum length validation
- * - Options input with comma-separated value processing
- * - Real-time form validation with error messages
- * - Loading states during submission
- * - Comprehensive error handling and user feedback
- * - Integration with shadcn/ui components for consistent styling
- * 
- * Poll creation process:
- * 1. User enters poll question and comma-separated options
- * 2. Form validates input according to schema rules
- * 3. Options are parsed and validated (minimum 2, maximum 10)
- * 4. Data is submitted to /api/polls endpoint
- * 5. Success feedback is shown and user is redirected
- * 
- * @returns {JSX.Element} The rendered poll creation form
- * 
- * @example
- * ```tsx
- * <PollForm />
- * ```
- */
-export default function PollForm() {
+type Poll = {
+  id: string;
+  question: string;
+  options: string[];
+};
+
+type Props = {
+  poll?: Poll;
+};
+
+export default function PollForm({ poll }: Props) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isEditMode = !!poll;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -73,6 +43,15 @@ export default function PollForm() {
       options: '',
     },
   });
+
+  useEffect(() => {
+    if (isEditMode) {
+      form.reset({
+        question: poll.question,
+        options: poll.options.join(', '),
+      });
+    }
+  }, [isEditMode, poll, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -93,24 +72,25 @@ export default function PollForm() {
       formData.append('question', values.question);
       formData.append('options', values.options);
 
-      // Submit the form to the server action
-      const response = await fetch('/api/polls', {
-        method: 'POST',
+      const url = isEditMode ? `/api/polls/${poll.id}` : '/api/polls';
+      const method = isEditMode ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create poll');
+        throw new Error(`Failed to ${isEditMode ? 'update' : 'create'} poll`);
       }
       
-      // Show success message and redirect
       setError(null);
-      toast.success('Poll created successfully!');
-      router.push('/polls');
+      toast.success(`Poll ${isEditMode ? 'updated' : 'created'} successfully!`);
+      router.push('/polls/manage');
       router.refresh();
-    } catch (err) {
-      console.error('Error creating poll:', err);
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred while creating the poll';
+    } catch (err)_ {
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} poll:`, err);
+      const errorMessage = err instanceof Error ? err.message : `An error occurred while ${isEditMode ? 'updating' : 'creating'} the poll`;
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -121,8 +101,10 @@ export default function PollForm() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Create New Poll</CardTitle>
-        <CardDescription>Create a new poll to gather opinions from your audience</CardDescription>
+        <CardTitle>{isEditMode ? 'Edit Poll' : 'Create New Poll'}</CardTitle>
+        <CardDescription>
+          {isEditMode ? 'Update the details of your poll.' : 'Create a new poll to gather opinions from your audience'}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -165,7 +147,7 @@ export default function PollForm() {
               </div>
             )}
             <Button type="submit" disabled={isSubmitting} className="w-full">
-              {isSubmitting ? 'Creating...' : 'Create Poll'}
+              {isSubmitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Poll' : 'Create Poll')}
             </Button>
           </form>
         </Form>
